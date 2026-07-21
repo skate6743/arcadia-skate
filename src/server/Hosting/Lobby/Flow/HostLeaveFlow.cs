@@ -6,7 +6,9 @@ using Arcadia.Hosting.Lobby.Reset;
 using Arcadia.Hosting.Lobby.Send;
 using Microsoft.Extensions.Logging;
 
-// Host-leave dissolve (both games): LostConnection kick to every remaining peer; host kick (0x8D) targets one peer.
+// Host-leave dissolve (both games) and host kick (0x8D, one peer). Both send the HostKick tuple:
+// S1 mValue=4 (KICKED_BY_GAME_HOST) makes the client show the kicked dialog instead of a silent dump;
+// S2 has no reason field in play — its tuple is wire-identical to LostConnection.
 namespace Arcadia.Hosting.Lobby.Flow
 {
     public static class HostLeaveFlow
@@ -60,9 +62,9 @@ namespace Arcadia.Hosting.Lobby.Flow
 
         public static Task BroadcastHostLeaveDissolveAsync(LobbyUdpServer server, string reason, CancellationToken ct)
         {
-            byte[] kick = GameRequestPacket.LostConnection(server.Variant);
+            byte[] kick = GameRequestPacket.HostKick(server.Variant);
             return ResetBroadcaster.BroadcastSk8BodyAsync(server, kick,
-                $"MT_GameRequest(LostConnection,host-left,dissolve,reason={reason})", ct);
+                $"MT_GameRequest(host-left,dissolve,reason={reason})", ct);
         }
     }
 }

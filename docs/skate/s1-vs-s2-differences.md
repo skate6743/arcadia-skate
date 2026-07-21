@@ -160,9 +160,9 @@ Branch by variant in `MapChangeFlow.RunAsync`.
 
 | Behavior | Skate 1 | Skate 2 |
 |---|---|---|
-| When creator leaves | dissolve lobby: `MT_GameRequest(mRequest=7, LostConnection)` to remaining peers | dissolve lobby: `MT_GameRequest(mRequest=4, LostConnection)` to remaining peers |
+| When creator leaves | dissolve lobby: `MT_GameRequest(mRequest=7, mValue=4)` to remaining peers — mValue 4 = KICKED_BY_GAME_HOST, so clients show the "host has kicked you" dialog rather than silently dumping to menus | dissolve lobby: `MT_GameRequest(mRequest=4, LostConnection)` to remaining peers |
 
-Both games dissolve (no `RemovePlayer` / `PLAYER_LEFT` on the host-leave path); `GameRequestPacket.LostConnection(variant)` picks the wire tuple. Gate in `LobbyUdpServer.RemoveAndAnnounceLeaveAsync`: `hostLeft` (leaver UID == `Game.UID`).
+Both games dissolve (no `RemovePlayer` / `PLAYER_LEFT` on the host-leave path); `GameRequestPacket.HostKick(variant)` picks the wire tuple — `(7, 4)` on Skate 1, and on Skate 2 it delegates to `LostConnection` (`(4, 0)`; S2 has no reason value in play). The same tuple serves the host-initiated 0x8D kick, so kick and host-leave read identically to an S1 client by design. Gate in `LobbyUdpServer.RemoveAndAnnounceLeaveAsync`: `hostLeft` (leaver UID == `Game.UID`).
 
 ## Recipe pipeline
 

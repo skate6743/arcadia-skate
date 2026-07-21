@@ -156,7 +156,7 @@ Several other server-side events broadcast `LobbySkate`:
 
 All three go through `ResetBroadcaster.BroadcastLobbySkateAsync`, so the FirstFrame barrier + watchdog re-send arm uniformly.
 
-> **Host-leave is *not* in this list — it does not fire a reset.** The Skate 2 host-leave dissolve (`HostLeaveFlow.BroadcastHostLeaveDissolveAsync`) sends `MT_GameRequest(LostConnection)` to the remaining peers; Skate 1 host-leave uses the normal `MT_GameRemovePlayer` + `PLAYER_LEFT` path. See [s1-vs-s2-differences.md](s1-vs-s2-differences.md#host-leave).
+> **Host-leave is *not* in this list — it does not fire a reset.** Host-leave dissolves the lobby on both games (`HostLeaveFlow.BroadcastHostLeaveDissolveAsync`): every remaining peer gets an `MT_GameRequest` built by `GameRequestPacket.HostKick` — Skate 1 `(mRequest=7, mValue=4 KICKED_BY_GAME_HOST)`, which makes clients show the "host has kicked you" dialog; Skate 2 `(mRequest=4, 0)`, wire-identical to plain LostConnection. See [s1-vs-s2-differences.md](s1-vs-s2-differences.md#host-leave).
 
 ## The reset watchdog
 
