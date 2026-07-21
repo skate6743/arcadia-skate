@@ -51,10 +51,8 @@ EXTRA STEP REQUIRED FOR SKATE 2 PLAYERS: When RPCS3 is open, make sure your Skat
 #### Before getting started you must forward the following ports:
 
 1. Forward the following ports:
-Port range 17000-17500 for UDP (used for dedicated lobby servers)
-
-Ports 18420, 18040, 18231, 18126, 18236, 42069, 80 for TCP
-
+* Port range 17000-17500 for UDP (used for dedicated lobby servers)
+* Ports 18420, 18040, 18231, 18126, 18236, 42069, 80 for TCP
 2. Download the latest Arcadia Release
 3. Extract the archive and run `Arcadia.exe` to start the server
 4. Get your [Public IP Address](https://myip.com/) and in Skate 1/2 custom config Network tab set IP/Hosts switches to `skate2-ps3.fesl.ea.com=YOURIPHERE&&skate-ps3.fesl.ea.com=YOURIPHERE&&downloads.skate.online.ea.com=YOURIPHERE`
