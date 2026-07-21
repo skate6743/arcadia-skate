@@ -1,0 +1,71 @@
+using Xunit;
+using Arcadia.EA;
+
+namespace tests;
+
+public class EAPacketTests
+{
+
+    [Fact]
+    public void ClientHello_Decodes()
+    {
+        var request = @"66
+73 79 73 c0 00 00 01 00 00 00 af 54 58 4e 3d 48
+65 6c 6c 6f 0a 63 6c 69 65 6e 74 53 74 72 69 6e
+67 3d 62 65 61 63 68 2d 70 73 33 0a 73 6b 75 3d
+70 73 33 0a 6c 6f 63 61 6c 65 3d 65 6e 5f 55 53
+0a 63 6c 69 65 6e 74 50 6c 61 74 66 6f 72 6d 3d
+50 53 33 0a 63 6c 69 65 6e 74 56 65 72 73 69 6f
+6e 3d 31 2e 30 0a 53 44 4b 56 65 72 73 69 6f 6e
+3d 35 2e 31 2e 30 2e 30 2e 30 0a 70 72 6f 74 6f
+63 6f 6c 56 65 72 73 69 6f 6e 3d 32 2e 30 0a 66
+72 61 67 6d 65 6e 74 53 69 7a 65 3d 38 30 39 36
+0a 63 6c 69 65 6e 74 54 79 70 65 3d 0a 00";
+
+        var requestData = HexStringToBytes(request);
+        var packet = new Packet(requestData);
+
+        Assert.Equal("fsys", packet.Type);
+        Assert.Equal((uint)1, packet.Id);
+        Assert.Equal(0xc0000000, packet.TransmissionType);
+        Assert.Equal("Hello", packet["TXN"]);
+        Assert.Equal(requestData.Length, (int)packet.Length);
+    }
+
+    // Regression: reading Length from the TransType+Id slot (offset 4) instead of offset 8 produced garbage huge lengths.
+    [Fact]
+    public void Header_LengthField_IsAtOffset8_BigEndian()
+    {
+        var requestData = new byte[]
+        {
+            0x66, 0x73, 0x79, 0x73,
+            0xc0, 0x00, 0x00, 0x01, // transType + id (NOT length)
+            0x00, 0x00, 0x00, 0xaf, // length = 175
+        };
+
+        var headerSpan = requestData.AsSpan();
+        uint peekedLength = ((uint)headerSpan[8] << 24)
+                          | ((uint)headerSpan[9] << 16)
+                          | ((uint)headerSpan[10] << 8)
+                          |  (uint)headerSpan[11];
+
+        Assert.Equal((uint)0xaf, peekedLength);
+
+        uint wrongPeek = ((uint)headerSpan[4] << 24)
+                       | ((uint)headerSpan[5] << 16)
+                       | ((uint)headerSpan[6] << 8)
+                       |  (uint)headerSpan[7];
+        Assert.Equal(0xc0000001u, wrongPeek);
+        Assert.NotEqual(peekedLength, wrongPeek);
+    }
+
+    private static byte[] HexStringToBytes(string value)
+    {
+        string cleanedRequest = value.Replace(" ", string.Empty).Replace("\n", string.Empty);
+        byte[] byteArray = Enumerable.Range(0, cleanedRequest.Length)
+                             .Where(x => x % 2 == 0)
+                             .Select(x => Convert.ToByte(cleanedRequest.Substring(x, 2), 16))
+                             .ToArray();
+        return byteArray;
+    }
+}
