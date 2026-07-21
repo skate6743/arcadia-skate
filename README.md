@@ -14,6 +14,7 @@ Upstream Arcadia is a general emulator for many EA Plasma titles. This fork focu
 ## Features
 * Working matchmaking into Unranked Matches & Freeskate lobbies
 * Dedicated servers for each lobby (no P2P connections between players)
+[Showcase Video](https://youtu.be/X4V-QbCJQQg)
 
 ## Setup Guide
 ### Joining Our Public Server (RPCS3)
