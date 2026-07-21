@@ -19,7 +19,7 @@ Upstream Arcadia is a general emulator for many EA Plasma titles. This fork focu
 ### Joining Our Public Server (RPCS3)
 #### Automated Setup (Recommended for Windows)
 
-[VIDEO GUIDE](https://youtube.com/videolinkhere)
+[VIDEO GUIDE](https://youtu.be/h-1X4jnx6X4)
 1. Open RPCS3, and at the top bar click on Help->Check for Updates, and proceed with updating to latest version. After updating just close out of RPCS3.
 2. Download this tool which auto adjusts your config with the right online related settings: [Skate RPCS3 Config Adjuster by BWKingsnake](https://github.com/bwkingsnake/rpcs3-skate-3-config-editor/releases/download/v3.0.0/bwkingsnakes.ConfigEditor.--Release.7z)
 3. Run the "ConfigEditorV3.exe" file inside that archive and locate to your rpcs3.exe path when it asks.
@@ -49,9 +49,15 @@ EXTRA STEP REQUIRED FOR SKATE 2 PLAYERS: When RPCS3 is open, make sure your Skat
 ### Hosting Your Own Server
 
 #### Before getting started you must forward the following ports:
+
+1. Forward the following ports:
 Port range 17000-17500 for UDP (used for dedicated lobby servers)
 
 Ports 18420, 18040, 18231, 18126, 18236, 42069, 80 for TCP
+2. Download the latest Arcadia Release
+3. Extract the archive and run `Arcadia.exe` to start the server
+4. Get your [Public IP Address](https://myip.com/) and in Skate 1/2 custom config Network tab set IP/Hosts switches to `skate2-ps3.fesl.ea.com=YOURIPHERE&&skate-ps3.fesl.ea.com=YOURIPHERE&&downloads.skate.online.ea.com=YOURIPHERE`
+5. Skate will now connect to your own hosted server
 
 ## Known Issues
 
