@@ -102,7 +102,6 @@ if (otherSession.WaitingForFirstFrameAfterReset)
     lock (otherSession.RelayLock)
     {
         otherSession.PendingForResetReleaseToDst.Enqueue(dstBody);
-        Interlocked.Increment(ref otherSession.ResetGateHoldsTotal);
     }
     continue;
 }
@@ -170,8 +169,6 @@ These work together: a single outbound UDP datagram carries one ProtoTunnel enve
 | `GateRejectedRelays` / `StaleEpochGameSyncStrips` / `PreResetStragglerStrips` | send-gate + epoch-strip + straggler-fence diagnostics | `RelayPipeline` / `GameSyncHandler` |
 | `OrderedPendingRelayBodies` | parked bodies awaiting drain | `AppLayerWalker.ParkRelayBody` |
 | `PendingForResetReleaseToDst` | held bodies for a peer in pre-reset state | `RelayPipeline.RelayAsync` |
-| `ResetGateHoldsTotal` / `ResetGateReleasesTotal` | counters for diagnostics | `RelayPipeline.RelayAsync` / `DrainResetGateReleaseAsync` |
-| `LoadingGameSyncMessagesStripped` | counter for diagnostics | `RelayPipeline.RelayAsync` |
 
 ## See also
 

@@ -153,9 +153,8 @@ Several other server-side events broadcast `LobbySkate`:
 | `JoinFinalizeFlow` | New peer finished handshake; rebuild slot table for everyone | `Flow/JoinFinalizeFlow.FireAsync` |
 | `MapChangeFlow` | Host requests a map change (`MT_GameRequestChange`) → announce, retarget attributes (ack-gated), reload (both variants) | `Flow/MapChangeFlow.RunAsync` |
 | `PostChallengeFlow` | After challenge results display, return to free-skate | `Flow/PostChallengeFlow.RunAsync` |
-| Debug force-reset keybind (`c`) | manual `MT_GameReset(LobbySkate)` re-broadcast; also releases the `InProgress` / challenge / map-change gates so it can abort a wedged flow | `LobbyUdpServer.ForceBroadcastGameResetAsync` |
 
-All four go through `ResetBroadcaster.BroadcastLobbySkateAsync`, so the FirstFrame barrier + watchdog re-send arm uniformly.
+All three go through `ResetBroadcaster.BroadcastLobbySkateAsync`, so the FirstFrame barrier + watchdog re-send arm uniformly.
 
 > **Host-leave is *not* in this list — it does not fire a reset.** The Skate 2 host-leave dissolve (`HostLeaveFlow.BroadcastHostLeaveDissolveAsync`) sends `MT_GameRequest(LostConnection)` to the remaining peers; Skate 1 host-leave uses the normal `MT_GameRemovePlayer` + `PLAYER_LEFT` path. See [s1-vs-s2-differences.md](s1-vs-s2-differences.md#host-leave).
 
@@ -181,7 +180,7 @@ The gate is released on the happy path by map-change's `finally` (bounded ~8 s) 
 - The challenge-start and Phase-2 `Task.Run`s in `ChallengeFlow` clear `InProgress` + `ChallengeAwaitingReady` if their flow throws.
 - `PostChallengeFlow.RunAsync`'s `finally` clears `InProgress` even if the post-challenge sequence throws before its happy-path clear.
 
-Two peer-departure guards complement these: a leaver who was the last peer Phase 2 was waiting on triggers a readiness re-check (`ChallengeFlow.OnPeerLeft` — fires Phase 2 for the survivors, or clears the gates if no eligible peers remain), and the post-challenge results collect skips peers that have left (`PostChallengeFlow.StillPresent`) instead of waiting out its ceiling on them. The manual `c` keybind releases the same gates immediately, then broadcasts the free-skate reset.
+Two peer-departure guards complement these: a leaver who was the last peer Phase 2 was waiting on triggers a readiness re-check (`ChallengeFlow.OnPeerLeft` — fires Phase 2 for the survivors, or clears the gates if no eligible peers remain), and the post-challenge results collect skips peers that have left (`PostChallengeFlow.StillPresent`) instead of waiting out its ceiling on them.
 
 ## Reset broadcasts are parallel — both variants
 

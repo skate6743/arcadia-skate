@@ -17,7 +17,7 @@ Source:
 
 Recipes reach arcadia by **two channels**:
 
-1. **Plasma blob upload (TCP)** — when a peer connects to Fesl, it can upload its recipe via Plasma's `AddBlob` endpoint. Arcadia's `FeslHandler.HandleAddBlob` extracts the blob bytes and stores them in `RecipeBlobStore` keyed by `(uid, contentType)`, where `contentType` is the **wire** value from the `AddBlob` packet's `type` field: `RecipeBlobStore.CT_Recipe = 16`, `CT_Thumb = 17`. The client's internal enum is `CT_Recipe = 5` / `CT_Thumb = 6`, which it maps to the wire values `16`/`17` before upload; arcadia keys the store on the wire value.
+1. **Plasma blob upload (TCP)** — when a peer connects to Fesl, it can upload its recipe via Plasma's `AddBlob` endpoint. Arcadia's `FeslHandler.HandleAddBlob` extracts the blob bytes and stores them in `RecipeBlobStore` keyed by `(uid, contentType)`, where `contentType` is the **wire** value from the `AddBlob` packet's `type` field — recipes are `RecipeBlobStore.CT_Recipe = 16`; thumbnails arrive as wire value `17` and are stored under that raw value (the store keys on any int; only the recipe type has a named constant). The client's internal enum is `CT_Recipe = 5` / `CT_Thumb = 6`, which it maps to the wire values `16`/`17` before upload; arcadia keys the store on the wire value.
 2. **UDP peer-relay (CommUDP)** — when peer B requests peer A's recipe via `MT_GameRecipeRequest`, arcadia responds with `MT_GameRecipeHead` + N × `MT_GameRecipeData` chunks from the cached blob.
 
 In practice, every peer's recipe should already be in the cache (uploaded at Fesl handshake) before any peer requests it.
@@ -142,7 +142,7 @@ If `RespondAsync` ever served a `Head` with garbage data, the requester's recipe
 
 ## The recipe-mesh gate
 
-A naive gate — wait for `session.RecipeServed` then 5 s — is satisfied by the joiner's
+A naive gate — wait for the joiner's first completed recipe serve, then 5 s — is satisfied by the joiner's
 **own-recipe self-echo** (the first thing every client requests after uploading), so the
 actual cross-peer exchange isn't covered: the joiner's requests for existing peers'
 recipes arrive 5–16 s after upload and routinely lose the race against the reset →

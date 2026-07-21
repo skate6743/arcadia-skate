@@ -312,7 +312,7 @@ private static void WriteOne(Span<byte> dst, IPAddress addr, ushort port)
 
 12 bytes total: `[4 IPv4][2 port][4 IPv4][2 port]`. First pair is the "internal" (LAN) address, second is "external" (WAN).
 
-Selector byte preceding it (per `RosterPlayer.WriteFields`): `0` = `SelectorInternetAddressPair` (the layout above), `2` = `SelectorXnaddr` (the Xbox 360 packed network address — unused on PS3).
+Selector byte preceding it (per `RosterPlayer.WriteFields`): `0` = `SelectorInternetAddressPair` (the layout above); wire value `2` selects the Xbox 360 packed xnaddr form instead — unused on PS3, and this codebase only models the pair form.
 
 ## Inbound dispatch summary
 
