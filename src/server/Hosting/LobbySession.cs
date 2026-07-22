@@ -67,6 +67,10 @@ namespace Arcadia.Hosting
 
         public uint LockstepFrame;
 
+        // S2 client-announced sim pause (MT_GameRequest PauseResume): GS silence is legitimate
+        // while true — exempts the ResetWatchdog frozen check (race intros / countdowns).
+        public bool ClientPaused;
+
         public int BarrierEpoch;
         public uint ResetSeqToDst;
         public bool ResetSeqSent;

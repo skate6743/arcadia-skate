@@ -65,6 +65,7 @@ namespace Arcadia.Hosting.Lobby.Reset
                 string fireLabel = "";
                 int fireAttempt = 0, fireGen = 0;
                 bool giveUp = false;
+                bool pausedDefer = false;
                 string disarmReason = "";
                 string departedNote = "";
 
@@ -153,9 +154,20 @@ namespace Arcadia.Hosting.Lobby.Reset
                                 if (agoMs >= AliveWindowMs) { allAlive = false; break; }
                             }
 
+                            bool anyPaused = false;
+                            foreach (LobbySession s in watched)
+                                if (s.ClientPaused) { anyPaused = true; break; }
+
                             if (sinceResumeMs < PostResumeGraceMs)
                             {
                                 // grace
+                            }
+                            else if (frozenMs >= frozenConfirmMs && allAlive && anyPaused)
+                            {
+                                // Client-announced pause (race intro / countdown): GS silence is
+                                // legitimate — restart the frozen clock instead of firing.
+                                server.RwLastProgressAt = now;
+                                pausedDefer = true;
                             }
                             else if (frozenMs >= frozenConfirmMs && allAlive)
                             {
@@ -189,6 +201,12 @@ namespace Arcadia.Hosting.Lobby.Reset
                     server.Logger.LogInformation(
                         "LobbyUdp[{lobby}] ResetWatchdog pruned departed peer(s) uid=[{uids}], progress baseline rebased",
                         server.LobbyId, departedNote);
+                }
+                if (pausedDefer)
+                {
+                    server.Logger.LogInformation(
+                        "LobbyUdp[{lobby}] ResetWatchdog frozen check deferred — client-announced pause in effect",
+                        server.LobbyId);
                 }
                 if (disarmReason.Length > 0)
                 {

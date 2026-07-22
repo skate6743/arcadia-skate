@@ -89,75 +89,92 @@ namespace Arcadia.Hosting.Lobby.Relay
         }
 
         // Releases bodies held in PendingForResetReleaseToDst once dst's FirstFrame clears.
+        // Bodies stay queued until their batch is confirmed sent, so RelayAsync's decision
+        // (backlog non-empty ⇒ enqueue behind) preserves per-dst FIFO across the flush.
+        // Single drainer per dst: only the dst's serial ProcessTail calls this.
+        // see lobbyserver.md > Relay > Release ordering
         public static async Task DrainResetGateReleaseAsync(LobbyUdpServer server, IPEndPoint ep, LobbySession session, CancellationToken ct)
         {
-            List<byte[]>? heldBodies = null;
-            int releaseEpoch;
-            lock (session.RelayLock)
+            bool announced = false;
+            while (true)
             {
-                releaseEpoch = Volatile.Read(ref server.ResetEpoch);
-                if (session.PendingForResetReleaseToDst.Count > 0)
+                List<byte[]> batch = new List<byte[]>();
+                int generation;
+                int backlog;
+                lock (session.RelayLock)
                 {
-                    heldBodies = new List<byte[]>(session.PendingForResetReleaseToDst.Count);
-                    while (session.PendingForResetReleaseToDst.TryDequeue(out byte[]? body))
-                        heldBodies.Add(body);
+                    if (session.WaitingForFirstFrameAfterReset) return;
+                    backlog = session.PendingForResetReleaseToDst.Count;
+                    if (backlog == 0) return;
+                    generation = session.BarrierEpoch;
+
+                    int batchBytes = 0;
+                    foreach (byte[] body in session.PendingForResetReleaseToDst)
+                    {
+                        if (batch.Count > 0 && batchBytes + body.Length > MaxResetReleaseBatchBytes) break;
+                        batch.Add(body);
+                        batchBytes += body.Length;
+                    }
                 }
-            }
-            if (heldBodies is null || heldBodies.Count == 0) return;
 
-            Func<bool> releaseGate = () => Volatile.Read(ref server.ResetEpoch) == releaseEpoch
-                                        && !session.WaitingForFirstFrameAfterReset;
-
-            server.Logger.LogInformation(
-                "LobbyUdp[{lobby}] RESET-GATE-RELEASE ep={ep} uid={uid} draining {n} held body(ies) post-FirstFrame (coalesced ≤{max}B/frame)",
-                server.LobbyId, ep, session.PlayerInfo?.UID ?? 0, heldBodies.Count, MaxResetReleaseBatchBytes);
-
-            int rgi = 0;
-            while (rgi < heldBodies.Count)
-            {
-                int rgStart = rgi;
-                int rgLen = heldBodies[rgi].Length;
-                rgi++;
-                while (rgi < heldBodies.Count
-                    && rgLen + heldBodies[rgi].Length <= MaxResetReleaseBatchBytes)
+                if (!announced)
                 {
-                    rgLen += heldBodies[rgi].Length;
-                    rgi++;
+                    announced = true;
+                    server.Logger.LogInformation(
+                        "LobbyUdp[{lobby}] RESET-GATE-RELEASE ep={ep} uid={uid} draining {n} held body(ies) post-FirstFrame (coalesced ≤{max}B/frame)",
+                        server.LobbyId, ep, session.PlayerInfo?.UID ?? 0, backlog, MaxResetReleaseBatchBytes);
                 }
-                int rgCount = rgi - rgStart;
-                byte[] rgCombined;
-                if (rgCount == 1)
+
+                byte[] combined;
+                if (batch.Count == 1)
                 {
-                    rgCombined = heldBodies[rgStart];
+                    combined = batch[0];
                 }
                 else
                 {
-                    rgCombined = new byte[rgLen];
-                    int rgOff = 0;
-                    for (int k = rgStart; k < rgi; k++)
+                    int len = 0;
+                    foreach (byte[] b in batch) len += b.Length;
+                    combined = new byte[len];
+                    int off = 0;
+                    foreach (byte[] b in batch)
                     {
-                        Array.Copy(heldBodies[k], 0, rgCombined, rgOff, heldBodies[k].Length);
-                        rgOff += heldBodies[k].Length;
+                        Array.Copy(b, 0, combined, off, b.Length);
+                        off += b.Length;
                     }
                 }
+
+                Func<bool> releaseGate = () => session.BarrierEpoch == generation
+                                            && !session.WaitingForFirstFrameAfterReset;
+
+                uint releasedSeq;
                 try
                 {
-                    uint releasedSeq = await EncryptedSender.SendSk8BodyAsync(
-                        server, ep, session, rgCombined, "RESET-HELD-RELEASE", ct, sendGate: releaseGate);
-                    if (releasedSeq == 0)
-                    {
-                        // Re-armed mid-release: these bodies belong to the epoch the wipe just retired.
-                        server.Logger.LogInformation(
-                            "LobbyUdp[{lobby}] RESET-HELD-RELEASE voided by re-arm ep={ep} uid={uid} dropped={n}",
-                            server.LobbyId, ep, session.PlayerInfo?.UID ?? 0, heldBodies.Count - rgStart);
-                        return;
-                    }
+                    releasedSeq = await EncryptedSender.SendSk8BodyAsync(
+                        server, ep, session, combined, "RESET-HELD-RELEASE", ct, sendGate: releaseGate);
                 }
                 catch (OperationCanceledException) { return; }
                 catch (Exception e)
                 {
                     server.Logger.LogWarning(e, "LobbyUdp[{lobby}] RESET-HELD-RELEASE to {ep} uid={uid} failed",
                         server.LobbyId, ep, session.PlayerInfo?.UID ?? 0);
+                    // treat as sent: retrying at a fresh seq could duplicate frames into the rebuilt queue
+                    releasedSeq = 1;
+                }
+
+                if (releasedSeq == 0)
+                {
+                    // Re-armed mid-release: the wipe already retired these bodies with their epoch.
+                    server.Logger.LogInformation(
+                        "LobbyUdp[{lobby}] RESET-HELD-RELEASE voided by re-arm ep={ep} uid={uid}",
+                        server.LobbyId, ep, session.PlayerInfo?.UID ?? 0);
+                    return;
+                }
+
+                lock (session.RelayLock)
+                {
+                    if (session.BarrierEpoch != generation) return;
+                    for (int i = 0; i < batch.Count && session.PendingForResetReleaseToDst.Count > 0; i++)
+                        session.PendingForResetReleaseToDst.Dequeue();
                 }
             }
         }
@@ -262,15 +279,18 @@ namespace Arcadia.Hosting.Lobby.Relay
                     }
                 }
 
-                // RESET-GATE: hold this body while dst is still pre-reset.
-                if (otherSession.WaitingForFirstFrameAfterReset)
+                // RESET-GATE + FIFO: hold while dst is pre-reset, and keep holding while a
+                // released backlog is still flushing — a direct send must not overtake it.
+                // see lobbyserver.md > Relay > Release ordering
+                bool held;
+                lock (otherSession.RelayLock)
                 {
-                    lock (otherSession.RelayLock)
-                    {
+                    held = otherSession.WaitingForFirstFrameAfterReset
+                        || otherSession.PendingForResetReleaseToDst.Count > 0;
+                    if (held)
                         otherSession.PendingForResetReleaseToDst.Enqueue(dstBody);
-                    }
-                    continue;
                 }
+                if (held) continue;
 
                 sendTasks.Add(SendRelayBodyAsync(server, sender, otherSession, otherEp, dstBody, srcBareSeq, dstGameSyncCount > 0, drainEpoch, ct));
             }

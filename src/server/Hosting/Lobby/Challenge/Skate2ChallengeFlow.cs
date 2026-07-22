@@ -1,3 +1,4 @@
+using System.Net;
 using Arcadia.Hosting.Lobby.Handshake;
 using Arcadia.Hosting.Lobby.Protocol;
 using Arcadia.Hosting.Lobby.Reset;
@@ -99,17 +100,36 @@ namespace Arcadia.Hosting.Lobby.Challenge
                 allowDuringInProgress: true);
         }
 
-        // Watchdog-only re-send; does NOT re-arm the watchdog.
+        // Watchdog retry, targeted; does NOT re-arm the watchdog. A peer whose barrier cleared
+        // processed Reset(Challenge) and emits no new FirstFrame for a repeat (log-proven inert
+        // mid-challenge/race-intro) — a re-Close for it would arm an uncleariable barrier and
+        // consume the live input stream. Still-armed peers only, same epoch, original
+        // ResetSeqToDst stays the clear anchor.
+        // see lobbyserver.md > Challenge > Skate2ChallengeFlow
         public static async Task ResendPhase2Async(LobbyUdpServer server, CancellationToken ct)
         {
             long activity = HandshakeFlow.ResolveLobbyChallengeKey(server);
             var eligible = ResetBroadcaster.SnapshotEligible(server);
             if (eligible.Count == 0) return;
 
-            int epoch = ResetGate.Close(server, eligible, "Skate2-challenge-phase2-resend");
-
-            List<Task> sends = new List<Task>(eligible.Count);
+            List<(IPEndPoint Ep, LobbySession Session)> pending = new List<(IPEndPoint, LobbySession)>();
             foreach (var (peerEp, peerSession) in eligible)
+            {
+                bool armed;
+                lock (peerSession.RelayLock) { armed = peerSession.WaitingForFirstFrameAfterReset; }
+                if (armed) pending.Add((peerEp, peerSession));
+            }
+
+            if (pending.Count == 0)
+            {
+                server.Logger.LogWarning(
+                    "LobbyUdp[{lobby}] ResetWatchdog phase2 RESEND skipped — every peer cleared Reset(Challenge) (wedge is not reset loss)",
+                    server.LobbyId);
+                return;
+            }
+
+            List<Task> sends = new List<Task>(pending.Count);
+            foreach (var (peerEp, peerSession) in pending)
             {
                 sends.Add(Task.Run(async () =>
                 {
@@ -117,9 +137,8 @@ namespace Arcadia.Hosting.Lobby.Challenge
                     {
                         byte[] resetBody = HandshakeFlow.BuildGameResetForSession(
                             server, peerSession, Sk8ResetType.Challenge, activity);
-                        uint seq = await EncryptedSender.SendSk8BodyAsync(server, peerEp, peerSession, resetBody,
+                        await EncryptedSender.SendSk8BodyAsync(server, peerEp, peerSession, resetBody,
                             $"MT_GameReset(mResetType=Challenge,mActivity={activity},ResetWatchdog-resend)", ct, reliable: true);
-                        ResetGate.RecordResetSent(peerSession, epoch, seq);
                     }
                     catch (OperationCanceledException) { }
                     catch (Exception e)
@@ -130,6 +149,10 @@ namespace Arcadia.Hosting.Lobby.Challenge
                 }, ct));
             }
             await Task.WhenAll(sends);
+
+            server.Logger.LogWarning(
+                "LobbyUdp[{lobby}] ResetWatchdog phase2 RESEND Reset(Challenge,{act}) → {n} still-armed peer(s)",
+                server.LobbyId, activity, pending.Count);
         }
     }
 }

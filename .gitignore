@@ -20,6 +20,7 @@
 # IDE state
 .vs/
 **.suo
+**.pubxml.user
 
 # analysis working data (packet captures, local notes)
 **.pcapng

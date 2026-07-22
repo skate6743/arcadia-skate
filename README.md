@@ -42,7 +42,7 @@ EXTRA STEP REQUIRED FOR SKATE 2 PLAYERS: When RPCS3 is open, make sure your Skat
 
 ### PS3 Guide (For HEN/CFW Users)
 
-1. Download the [Skate Server IP Changer Tool](https://comingsoon.com) and open the "Skate PS3 Server IP Changer.exe"
+1. Download the [Skate Server IP Changer Tool](https://github.com/skate6743/skate-ps3-server-ip-changer/releases/download/Release/Skate.PS3.Server.IP.Changer.rar) and open the "Skate PS3 Server IP Changer.exe"
 2. Press connect, type in your PS3 IP, and hit Enter, then attach to main EBOOT.
 3. If you want to simply connect to our publicly hosted server, click on the "Override Server IP" button, the default IP for connecting to our server is `172.237.109.212` and you don't have to modify this at all.
 4. After changing the Server IP you can connect to EA Nation, keep in mind PS3 has separate lobbies from RPCS3 due to desync issues that would happen with crossplay.

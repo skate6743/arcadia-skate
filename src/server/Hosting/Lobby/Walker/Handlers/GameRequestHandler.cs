@@ -25,6 +25,10 @@ namespace Arcadia.Hosting.Lobby.Walker.Handlers
 
             string pauseTag = mRequest == Sk8GameRequest.PauseResume
                 ? (mValue != 0 ? " [PAUSE]" : " [RESUME]") : "";
+
+            // S2 only: mRequest byte 5 is unverified on S1.
+            if (mRequest == Sk8GameRequest.PauseResume && ctx.Server.Variant == GameVariant.Skate2)
+                ctx.Session.ClientPaused = mValue != 0;
             ctx.Logger.LogInformation(
                 "LobbyUdp[{lobby}] APP-MSG GameRequest {ep} uid={uid} mRequest={req} mValue={val}{tag}",
                 ctx.LobbyId, ctx.Ep, ctx.Session.PlayerInfo?.UID ?? 0, mRequest, mValue, pauseTag);
