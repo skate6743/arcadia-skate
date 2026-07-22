@@ -25,7 +25,6 @@
 # analysis working data (packet captures, local notes)
 **.pcapng
 **/__pycache__/
-tools/snek_analysis.txt
 
 # local Frostbite server instance files (not part of this repo's server)
 dist/ps3/

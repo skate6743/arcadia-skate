@@ -92,7 +92,6 @@ namespace Arcadia.Hosting.Lobby.Relay
         // Bodies stay queued until their batch is confirmed sent, so RelayAsync's decision
         // (backlog non-empty ⇒ enqueue behind) preserves per-dst FIFO across the flush.
         // Single drainer per dst: only the dst's serial ProcessTail calls this.
-        // see lobbyserver.md > Relay > Release ordering
         public static async Task DrainResetGateReleaseAsync(LobbyUdpServer server, IPEndPoint ep, LobbySession session, CancellationToken ct)
         {
             bool announced = false;
@@ -281,7 +280,6 @@ namespace Arcadia.Hosting.Lobby.Relay
 
                 // RESET-GATE + FIFO: hold while dst is pre-reset, and keep holding while a
                 // released backlog is still flushing — a direct send must not overtake it.
-                // see lobbyserver.md > Relay > Release ordering
                 bool held;
                 lock (otherSession.RelayLock)
                 {

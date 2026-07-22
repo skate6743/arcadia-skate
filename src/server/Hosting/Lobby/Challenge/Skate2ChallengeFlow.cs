@@ -105,7 +105,6 @@ namespace Arcadia.Hosting.Lobby.Challenge
         // mid-challenge/race-intro) — a re-Close for it would arm an uncleariable barrier and
         // consume the live input stream. Still-armed peers only, same epoch, original
         // ResetSeqToDst stays the clear anchor.
-        // see lobbyserver.md > Challenge > Skate2ChallengeFlow
         public static async Task ResendPhase2Async(LobbyUdpServer server, CancellationToken ct)
         {
             long activity = HandshakeFlow.ResolveLobbyChallengeKey(server);

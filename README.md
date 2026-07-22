@@ -1,6 +1,6 @@
 # Arcadia
 
-This is a fork of [Arcadia](https://github.com/valters-tomsons/arcadia) tailored specifically for EA Skate 1/2 with required FESL/Theater side changes and dedicated lobby servers implemented. Further documentation on the lobby servers and its stack is found at the [docs](docs/) folder.
+This is a fork of [Arcadia](https://github.com/valters-tomsons/arcadia) tailored specifically for EA Skate 1 & 2 with required FESL/Theater side changes and dedicated lobby servers implemented. Further documentation on the lobby servers and its stack is found at the [docs](docs/) folder.
 
 Not affiliated, associated, authorized, endorsed by, or in any way officially connected with Electronic Arts Inc. or any of its subsidiaries or affiliates. The use of any trademarks, logos, or brand names is for identification purposes only and does not imply endorsement or affiliation.
 
@@ -22,7 +22,7 @@ Upstream Arcadia is a general emulator for many EA Plasma titles. This fork focu
 
 [VIDEO GUIDE](https://youtu.be/h-1X4jnx6X4)
 1. Open RPCS3, and at the top bar click on Help->Check for Updates, and proceed with updating to latest version. After updating just close out of RPCS3.
-2. Download this tool which auto adjusts your config with the right online related settings: [Skate RPCS3 Config Adjuster by BWKingsnake](https://github.com/bwkingsnake/rpcs3-skate-3-config-editor/releases/download/v3.0.0/bwkingsnakes.ConfigEditor.--Release.7z)
+2. Download this tool which auto adjusts your config with the right online related settings: [Skate RPCS3 Config Adjuster by BWKingsnake](https://github.com/bwkingsnake/rpcs3-skate-3-config-editor/releases/download/v3.0.2/bwkingsnakes.ConfigEditor.--Release.7z)
 3. Run the "ConfigEditorV3.exe" file inside that archive and locate to your rpcs3.exe path when it asks.
 4. Select a number for the game that you wanna patch to work online and press `Enter` on keyboard. (Type 2 for Skate 2, etc.)
 5. Open RPCS3, click on the "RPCN" icon (right next to pads settings), and go to Account->Create Account if you don't have one already. You will need to fully go through the account creation process with verifying your email, etc.
@@ -71,16 +71,11 @@ Both PSN and RPCN clients are supported and can play in their own separate lobby
 Game     |   Status      | Live status
 ---------| ----------    | ----- 
 Skate    | Online        | 2-player lobbies.
-Skate 2  | Online        | Multiplayer lobbies.
+Skate 2  | Online        | 6-player lobbies.
 
 ## Special Thanks
 
-* *[valters-tomsons](https://github.com/valters-tomsons)* for the original Arcadia repo, with FESL/Theater side functionality implemented
-* *[cetteup](https://github.com/cetteup)* - lot of proxy stuff, lots of knowledge of ea systems, lots of captures and for fixing my ea packet implementation! Thanks! 
-* *[Aim4kill](https://github.com/Aim4kill)* for the great ProtoSSL vulnerability write-up
-* *[And799](https://www.youtube.com/@andersson799)* for devmenu and general frostbite knowledge
-* [PSRewired](https://psrewired.com): `1UP` for inclusion in DNS, `Dorian_D` for packet captures
-* [Battlefield Modding](https://duckduckgo.com/?t=ffab&q=battlefield+modding+discord) community
+None of this would exist without upstream [Arcadia](https://github.com/valters-tomsons/arcadia) and its [Contributors](https://github.com/valters-tomsons/arcadia/graphs/contributors) — the entire FESL/Theater (Plasma) side of this server, meaning login, auth, and game listing, was already working upstream before any of the lobby-server work here began. This fork's dedicated lobby servers and FESL/Theater side modifications are built on top of that foundation.
 
 ## Resources
 

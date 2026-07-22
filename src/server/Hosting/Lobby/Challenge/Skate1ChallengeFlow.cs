@@ -63,7 +63,6 @@ namespace Arcadia.Hosting.Lobby.Challenge
         // barrier already cleared processed the reset and cannot be helped by a resend — while a
         // re-Close would wipe its live-epoch held bodies and arm a barrier no FirstFrame clears.
         // Still-armed peers only, same epoch: the original ResetSeqToDst stays the clear anchor.
-        // see lobbyserver.md > Challenge > Skate1ChallengeFlow
         public static async Task ResendAsync(LobbyUdpServer server, CancellationToken ct)
         {
             long activity = HandshakeFlow.ResolveLobbyChallengeKey(server);
